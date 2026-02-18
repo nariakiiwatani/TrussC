@@ -135,6 +135,7 @@ elseif(TC_PLATFORM_IOS)
         "-framework AVFoundation"
         "-framework CoreMedia"
         "-framework CoreVideo"
+        "-framework UniformTypeIdentifiers"
     )
     target_compile_options(TrussC PRIVATE -fobjc-arc)
 

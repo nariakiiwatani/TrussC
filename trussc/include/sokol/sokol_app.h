@@ -2208,6 +2208,8 @@ SOKOL_APP_API_DECL void sapp_html5_fetch_dropped_file(const sapp_html5_fetch_req
 SOKOL_APP_API_DECL const void* sapp_macos_get_window(void);
 /* iOS: get bridged pointer to iOS UIWindow */
 SOKOL_APP_API_DECL const void* sapp_ios_get_window(void);
+/* iOS: set supported interface orientations (UIInterfaceOrientationMask values) */
+SOKOL_APP_API_DECL void sapp_ios_set_supported_orientations(uint32_t mask);
 
 /* D3D11: get pointer to IDXGISwapChain object */
 SOKOL_APP_API_DECL const void* sapp_d3d11_get_swap_chain(void);
@@ -2858,19 +2860,24 @@ typedef struct {
     @end
 #endif
 
+// Modified by tettou771 for TrussC: custom view controller for runtime orientation control
+@interface _sapp_ios_view_ctrl : UIViewController
+@end
+
 typedef struct {
     UIWindow* window;
     _sapp_ios_view* view;
     UITextField* textfield;
     _sapp_textfield_dlg* textfield_dlg;
     #if defined(SOKOL_METAL)
-        UIViewController* view_ctrl;
+        _sapp_ios_view_ctrl* view_ctrl;
         id<MTLDevice> mtl_device;
     #else
         GLKViewController* view_ctrl;
         EAGLContext* eagl_ctx;
     #endif
     bool suspended;
+    NSUInteger supported_orientations;  // UIInterfaceOrientationMask (default: all)
 } _sapp_ios_t;
 
 #endif // _SAPP_IOS
@@ -6102,7 +6109,8 @@ _SOKOL_PRIVATE void _sapp_ios_mtl_init(void) {
 #if !defined(_SAPP_TVOS)
     _sapp.ios.view.multipleTouchEnabled = YES;
 #endif
-    _sapp.ios.view_ctrl = [[UIViewController alloc] init];
+    _sapp.ios.supported_orientations = UIInterfaceOrientationMaskAll;
+    _sapp.ios.view_ctrl = [[_sapp_ios_view_ctrl alloc] init];
     _sapp.ios.view_ctrl.modalPresentationStyle = UIModalPresentationFullScreen;
     _sapp.ios.view_ctrl.view = _sapp.ios.view;
     _sapp.ios.window.rootViewController = _sapp.ios.view_ctrl;
@@ -6483,6 +6491,14 @@ _SOKOL_PRIVATE void _sapp_ios_show_keyboard(bool shown) {
     _sapp_ios_touch_event(SAPP_EVENTTYPE_TOUCHES_CANCELLED, touches, event);
 }
 @end
+
+// Modified by tettou771 for TrussC: custom view controller for runtime orientation control
+@implementation _sapp_ios_view_ctrl
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    return _sapp.ios.supported_orientations;
+}
+@end
+
 #endif /* TARGET_OS_IPHONE */
 
 #endif /* _SAPP_APPLE */
@@ -14009,6 +14025,20 @@ SOKOL_API_IMPL const void* sapp_ios_get_window(void) {
         return obj;
     #else
         return 0;
+    #endif
+}
+
+// Modified by tettou771 for TrussC: runtime orientation control
+SOKOL_API_IMPL void sapp_ios_set_supported_orientations(uint32_t mask) {
+    #if defined(_SAPP_IOS)
+        _sapp.ios.supported_orientations = (NSUInteger)mask;
+        #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 160000
+            if (@available(iOS 16.0, *)) {
+                [_sapp.ios.view_ctrl setNeedsUpdateOfSupportedInterfaceOrientations];
+            }
+        #endif
+    #else
+        (void)mask;
     #endif
 }
 
