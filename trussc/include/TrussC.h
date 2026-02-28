@@ -280,6 +280,9 @@ namespace internal {
 
     // Pass state (for suspending swapchain pass for FBO)
     inline bool inSwapchainPass = false;
+
+    // ImGui deferred render flag (set by imguiEnd, consumed by present)
+    inline bool imguiRenderPending = false;
     // Saved clear color for resume after FBO suspend (set by clear())
     inline sg_color swapchainClearValue = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -383,6 +386,12 @@ inline void present() {
     // Flush sokol_gl layers and deferred shader draws
     flushDeferredShaderDraws();
 
+    // Render ImGui on top of all sokol_gl content (deferred from imguiEnd)
+    if (internal::imguiRenderPending) {
+        simgui_render();
+        internal::imguiRenderPending = false;
+    }
+
     // Check for vertex buffer overflow before sg_commit resets errors
     sgl_error_t err = sgl_error();
     if (err.vertices_full || err.commands_full) {
@@ -459,7 +468,7 @@ inline Color getColor() {
     return getDefaultContext().getColor();
 }
 
-// Set using HSB (H: 0-TAU, S: 0-1, B: 0-1)
+// Set using HSB (H: 0-1, S: 0-1, B: 0-1)
 inline void setColorHSB(float h, float s, float b, float a = 1.0f) {
     getDefaultContext().setColorHSB(h, s, b, a);
 }
@@ -469,7 +478,7 @@ inline void setColorOKLab(float L, float a_lab, float b_lab, float alpha = 1.0f)
     getDefaultContext().setColorOKLab(L, a_lab, b_lab, alpha);
 }
 
-// Set using OKLCH (L: 0-1, C: 0-0.4, H: 0-TAU) - most perceptually natural
+// Set using OKLCH (L: 0-1, C: 0-0.4, H: 0-1) - most perceptually natural
 inline void setColorOKLCH(float L, float C, float H, float alpha = 1.0f) {
     getDefaultContext().setColorOKLCH(L, C, H, alpha);
 }

@@ -103,7 +103,7 @@ public:
         setColor(c.r, c.g, c.b, c.a);
     }
 
-    // Set with HSB (H: 0-TAU, S: 0-1, B: 0-1)
+    // Set with HSB (H: 0-1, S: 0-1, B: 0-1)
     void setColorHSB(float h, float s, float b, float a = 1.0f) {
         Color c = ColorHSB(h, s, b, a).toRGB();
         setColor(c.r, c.g, c.b, c.a);
