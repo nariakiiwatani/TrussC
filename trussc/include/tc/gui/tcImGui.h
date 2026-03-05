@@ -8,6 +8,8 @@
 #include "imgui/imgui.h"
 #include "sokol/util/sokol_imgui.h"
 #include "tc/utils/tcLog.h"
+#include "tc/gui/tcImGuiHooks.h"
+#include "tc/gui/tcImGuiTools.h"
 
 namespace trussc {
 
@@ -107,11 +109,13 @@ inline void imguiBegin() {
     int h = sapp_height();
     float dt = static_cast<float>(sapp_frame_duration());
     ImGuiManager::instance().begin(w, h, dt);
+    imgui_tools::beginFrame();
 }
 
 // End frame (render)
 inline void imguiEnd() {
     ImGuiManager::instance().end();
+    imgui_tools::swapFrames();
 }
 
 // Event handling (internal use)
