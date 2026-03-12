@@ -87,6 +87,11 @@ macro(trussc_app)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/*.mm"
             "${CMAKE_CURRENT_SOURCE_DIR}/src/*.m"
         )
+        # Exclude Objective-C/C++ files on non-Apple platforms
+        if(NOT APPLE)
+            list(FILTER _TC_SOURCES EXCLUDE REGEX ".*\\.mm$")
+            list(FILTER _TC_SOURCES EXCLUDE REGEX ".*\\.m$")
+        endif()
     endif()
 
     # Preserve directory structure in Xcode / Visual Studio
