@@ -279,17 +279,7 @@ endfunction()
 function(_trussc_apply_macos_icon_folder TARGET_NAME ICON_FOLDER OUT_SUCCESS)
     set(${OUT_SUCCESS} FALSE PARENT_SCOPE)
 
-    # Find actool (included in Xcode)
-    find_program(ACTOOL_EXECUTABLE actool
-        HINTS /Applications/Xcode.app/Contents/Developer/usr/bin
-              /Applications/Xcode-beta.app/Contents/Developer/usr/bin
-    )
-    if(NOT ACTOOL_EXECUTABLE)
-        message(STATUS "[${TARGET_NAME}] actool not found - skipping .icon folder (install Xcode for macOS 26 Tahoe icon support)")
-        return()
-    endif()
-
-    # Verify full Xcode is installed (actool needs SDK, not just CLI tools)
+    # Require full Xcode (actool shim exists in CLI tools but doesn't work)
     execute_process(
         COMMAND xcode-select -p
         OUTPUT_VARIABLE XCODE_DEV_DIR
@@ -298,7 +288,17 @@ function(_trussc_apply_macos_icon_folder TARGET_NAME ICON_FOLDER OUT_SUCCESS)
         ERROR_QUIET
     )
     if(NOT XCODE_SELECT_RESULT EQUAL 0 OR NOT XCODE_DEV_DIR MATCHES "Xcode.*\\.app")
-        message(STATUS "[${TARGET_NAME}] Full Xcode not found - skipping .icon folder")
+        message(STATUS "[${TARGET_NAME}] Skipping .icon folder (requires full Xcode)")
+        return()
+    endif()
+
+    # Find actool from Xcode
+    find_program(ACTOOL_EXECUTABLE actool
+        HINTS "${XCODE_DEV_DIR}/usr/bin"
+        NO_DEFAULT_PATH
+    )
+    if(NOT ACTOOL_EXECUTABLE)
+        message(STATUS "[${TARGET_NAME}] actool not found - skipping .icon folder")
         return()
     endif()
 
