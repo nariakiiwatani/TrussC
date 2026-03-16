@@ -76,8 +76,14 @@ void tcApp::setup() {
         importProject(importedProjectPath);
     }
 
-    // Detect installed Visual Studio versions (Windows only)
-    installedVsVersions = VsDetector::detectInstalledVersions();
+    // プラットフォーム固有のビルド環境を検出（ProjectSettings::detectBuildEnvironment と同じ処理）
+    // GUI側はUI表示用にメンバ変数にも保持する
+    {
+        ProjectSettings tmp;
+        tmp.detectBuildEnvironment();
+        installedVsVersions = tmp.installedVsVersions;
+        selectedVsIndex = tmp.selectedVsIndex;
+    }
 
     // Initial draw
     redraw();
@@ -769,19 +775,22 @@ void tcApp::startUpdate() {
     }).detach();
 }
 
+ProjectSettings tcApp::buildProjectSettings() {
+    ProjectSettings s;
+    s.projectName = projectName;
+    s.projectDir = projectDir;
+    s.tcRoot = tcRoot;
+    s.templatePath = getTemplatePath();
+    s.addons = addons;
+    s.addonSelected = addonSelected;
+    s.ideType = ideType;
+    s.generateWebBuild = generateWebBuild;
+    s.detectBuildEnvironment();
+    return s;
+}
+
 void tcApp::doGenerateProject() {
-    // Create settings for ProjectGenerator
-    ProjectSettings settings;
-    settings.projectName = projectName;
-    settings.projectDir = projectDir;
-    settings.tcRoot = tcRoot;
-    settings.templatePath = getTemplatePath();
-    settings.addons = addons;
-    settings.addonSelected = addonSelected;
-    settings.ideType = ideType;
-    settings.generateWebBuild = generateWebBuild;
-    settings.selectedVsIndex = selectedVsIndex;
-    settings.installedVsVersions = installedVsVersions;
+    auto settings = buildProjectSettings();
 
     ProjectGenerator generator(settings);
 
@@ -819,18 +828,7 @@ void tcApp::doUpdateProject() {
         return;
     }
 
-    // Create settings for ProjectGenerator
-    ProjectSettings settings;
-    settings.projectName = projectName;
-    settings.projectDir = projectDir;
-    settings.tcRoot = tcRoot;
-    settings.templatePath = getTemplatePath();
-    settings.addons = addons;
-    settings.addonSelected = addonSelected;
-    settings.ideType = ideType;
-    settings.generateWebBuild = generateWebBuild;
-    settings.selectedVsIndex = selectedVsIndex;
-    settings.installedVsVersions = installedVsVersions;
+    auto settings = buildProjectSettings();
 
     ProjectGenerator generator(settings);
 

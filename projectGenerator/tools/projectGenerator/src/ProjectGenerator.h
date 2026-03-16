@@ -18,6 +18,17 @@ struct ProjectSettings {
     bool generateWebBuild = false;
     int selectedVsIndex = 0;
     std::vector<VsVersionInfo> installedVsVersions;
+
+    // プラットフォーム固有のビルド環境を検出して設定
+    // CLI/GUI共通で呼ぶこと
+    void detectBuildEnvironment() {
+#ifdef _WIN32
+        installedVsVersions = VsDetector::detectInstalledVersions();
+        if (!installedVsVersions.empty()) {
+            selectedVsIndex = 0; // 最新バージョンを使用
+        }
+#endif
+    }
 };
 
 // Project generator class

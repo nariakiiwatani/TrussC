@@ -191,6 +191,7 @@ int main(int argc, char* argv[]) {
         ProjectSettings settings;
         settings.tcRoot = tcRoot;
         settings.generateWebBuild = web;
+        settings.detectBuildEnvironment();
         
         // Parse IDE type
         if (ideStr == "vscode") settings.ideType = IdeType::VSCode;

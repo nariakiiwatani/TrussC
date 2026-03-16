@@ -1,8 +1,7 @@
 #pragma once
 
 #include <TrussC.h>
-#include "IdeHelper.h"
-#include "VsDetector.h"
+#include "ProjectGenerator.h"
 #include <atomic>
 using namespace std;
 using namespace tc;
@@ -85,4 +84,5 @@ private:
     string getTemplatePath();
     void setStatus(const string& msg, bool isError = false);
     void resetToNewProject();
+    ProjectSettings buildProjectSettings(); // 現在のUI状態からProjectSettingsを構築
 };
