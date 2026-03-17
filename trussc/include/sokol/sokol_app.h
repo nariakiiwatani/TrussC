@@ -9879,6 +9879,7 @@ _SOKOL_PRIVATE void _sapp_win32_create_window(void) {
         _sapp_win32_update_dimensions();
     }
     ShowWindow(_sapp.win32.hwnd, SW_SHOW);
+    SetForegroundWindow(_sapp.win32.hwnd);
     DragAcceptFiles(_sapp.win32.hwnd, 1);
 }
 
