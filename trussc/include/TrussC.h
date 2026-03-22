@@ -1831,6 +1831,7 @@ struct WindowSettings {
     int sampleCount = 4;  // MSAA (default 4x, 8x not supported on some devices)
     bool fullscreen = false;
     int clipboardSize = 65536;  // Clipboard buffer size (default 64KB)
+    int swapInterval = 1;  // VSync: 1 = on (default), 0 = off
     // bool headless = false;  // For future use
 
     WindowSettings& setSize(int w, int h) {
@@ -2325,6 +2326,7 @@ int runApp(const WindowSettings& settings = WindowSettings()) {
     desc.high_dpi = settings.highDpi;
     desc.sample_count = settings.sampleCount;
     desc.fullscreen = settings.fullscreen;
+    desc.swap_interval = settings.swapInterval;
     desc.init_cb = internal::_setup_cb;
     desc.frame_cb = internal::_frame_cb;
     desc.cleanup_cb = internal::_cleanup_cb;

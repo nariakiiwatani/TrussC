@@ -3691,16 +3691,17 @@ static _sgl_vertex_t* _sgl_next_vertex(_sgl_context_t* ctx) {
 static _sgl_uniform_t* _sgl_next_uniform(_sgl_context_t* ctx) {
     if (ctx->uniforms.next >= ctx->uniforms.cap) {
         int new_cap = (ctx->uniforms.cap > 0) ? ctx->uniforms.cap * 2 : _SGL_DEFAULT_MAX_COMMANDS;
-        _sgl_uniform_t* new_ptr = (_sgl_uniform_t*) _sgl_malloc((size_t)new_cap * sizeof(_sgl_uniform_t));
+        _sgl_uniform_t* new_ptr;
+        if (ctx->uniforms.ptr) {
+            new_ptr = (_sgl_uniform_t*) realloc(ctx->uniforms.ptr, (size_t)new_cap * sizeof(_sgl_uniform_t));
+        } else {
+            new_ptr = (_sgl_uniform_t*) _sgl_malloc((size_t)new_cap * sizeof(_sgl_uniform_t));
+        }
         if (!new_ptr) {
             ctx->error.uniforms_full = true;
             ctx->error.any = true;
             return 0;
         }
-        if (ctx->uniforms.ptr && ctx->uniforms.next > 0) {
-            memcpy(new_ptr, ctx->uniforms.ptr, (size_t)ctx->uniforms.next * sizeof(_sgl_uniform_t));
-        }
-        _sgl_free(ctx->uniforms.ptr);
         ctx->uniforms.ptr = new_ptr;
         ctx->uniforms.cap = new_cap;
     }
@@ -3719,16 +3720,17 @@ static _sgl_command_t* _sgl_cur_command(_sgl_context_t* ctx) {
 static _sgl_command_t* _sgl_next_command(_sgl_context_t* ctx) {
     if (ctx->commands.next >= ctx->commands.cap) {
         int new_cap = (ctx->commands.cap > 0) ? ctx->commands.cap * 2 : _SGL_DEFAULT_MAX_COMMANDS;
-        _sgl_command_t* new_ptr = (_sgl_command_t*) _sgl_malloc((size_t)new_cap * sizeof(_sgl_command_t));
+        _sgl_command_t* new_ptr;
+        if (ctx->commands.ptr) {
+            new_ptr = (_sgl_command_t*) realloc(ctx->commands.ptr, (size_t)new_cap * sizeof(_sgl_command_t));
+        } else {
+            new_ptr = (_sgl_command_t*) _sgl_malloc((size_t)new_cap * sizeof(_sgl_command_t));
+        }
         if (!new_ptr) {
             ctx->error.commands_full = true;
             ctx->error.any = true;
             return 0;
         }
-        if (ctx->commands.ptr && ctx->commands.next > 0) {
-            memcpy(new_ptr, ctx->commands.ptr, (size_t)ctx->commands.next * sizeof(_sgl_command_t));
-        }
-        _sgl_free(ctx->commands.ptr);
         ctx->commands.ptr = new_ptr;
         ctx->commands.cap = new_cap;
     }
@@ -4157,8 +4159,9 @@ static bool _sgl_grow_gpu_buffer(_sgl_context_t* ctx, int min_vertices) {
     if (SG_INVALID_ID == ctx->vbuf.id) {
         return false;
     }
-    /* update capacity to match new GPU buffer (for future CPU grow decisions) */
-    ctx->vertices.cap = new_cap;
+    /* NOTE: do NOT update ctx->vertices.cap here.
+       CPU buffer cap is managed by _sgl_next_vertex auto-grow.
+       GPU buffer size is independent and tracked via sg_query_buffer_desc(). */
     return true;
 }
 
@@ -4207,9 +4210,9 @@ static void _sgl_draw(_sgl_context_t* ctx, int layer_id) {
         /* [TrussC fork] pre-check buffer capacity before append to avoid validation panic */
         if (data_size > 0 && sg_query_buffer_state(ctx->vbuf) == SG_RESOURCESTATE_VALID) {
             sg_buffer_desc buf_desc = sg_query_buffer_desc(ctx->vbuf);
-            int append_pos = sg_query_buffer_info(ctx->vbuf).append_pos;
-            if ((int)buf_desc.size < append_pos + (int)data_size) {
-                int needed = ((int)buf_desc.size + (int)data_size) / (int)sizeof(_sgl_vertex_t) + 1;
+            size_t append_pos = (size_t)sg_query_buffer_info(ctx->vbuf).append_pos;
+            if (buf_desc.size < append_pos + data_size) {
+                int needed = (int)((buf_desc.size + data_size) / sizeof(_sgl_vertex_t)) + 1;
 #ifdef SOKOL_METAL
                 /* Metal: safe to grow immediately (ARC retains GPU resources) */
                 if (!_sgl_grow_gpu_buffer(ctx, needed)) {
@@ -4229,7 +4232,7 @@ static void _sgl_draw(_sgl_context_t* ctx, int layer_id) {
         int base_offset = sg_append_buffer(ctx->vbuf, &range);
         if (sg_query_buffer_overflow(ctx->vbuf)) {
             /* GPU buffer too small — grow and retry (Metal) or defer (others) */
-            int needed = (int)(sg_query_buffer_desc(ctx->vbuf).size / sizeof(_sgl_vertex_t)) + ctx->vertices.next;
+            int needed = (int)(sg_query_buffer_desc(ctx->vbuf).size / sizeof(_sgl_vertex_t) + (size_t)ctx->vertices.next);
 #ifdef SOKOL_METAL
             if (!_sgl_grow_gpu_buffer(ctx, needed)) {
                 sg_pop_debug_group();
