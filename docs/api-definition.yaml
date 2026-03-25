@@ -2700,15 +2700,25 @@ categories:
         sketch: true
         snippet: "finish()"
 
-      - name: update
-        return: "void"
+      - name: loop
+        return: "Tween@"
         signatures:
-          - params: "float dt"
-            params_simple: "dt"
-        description: "Update animation"
-        description_ja: "更新"
+          - params: "int count = -1"
+            params_simple: "count"
+        description: "Set loop count (-1=infinite, 0=none, N=repeat N times)"
+        description_ja: "ループ回数を設定 (-1=無限, 0=なし, N=N回繰り返し)"
         sketch: true
-        snippet: "update(getDeltaTime())"
+        snippet: "loop(${1:-1})"
+
+      - name: yoyo
+        return: "Tween@"
+        signatures:
+          - params: "bool enable = true"
+            params_simple: "enable"
+        description: "Enable yoyo (reverse direction each loop)"
+        description_ja: "ヨーヨー（ループごとに方向反転）を有効化"
+        sketch: true
+        snippet: "yoyo()"
 
       - name: getValue
         return: "float"
@@ -2789,6 +2799,16 @@ categories:
         description_ja: "終了値を取得"
         sketch: true
         snippet: "getEnd()"
+
+      - name: getLoopCount
+        return: "int"
+        signatures:
+          - params: ""
+            params_simple: ""
+        description: "Get number of completed loop iterations"
+        description_ja: "完了したループ回数を取得"
+        sketch: true
+        snippet: "getLoopCount()"
 
   # ==========================================================================
   # Types - Vec2

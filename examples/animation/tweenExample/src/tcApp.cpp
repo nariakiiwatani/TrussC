@@ -74,10 +74,7 @@ public:
     }
 
     void update() override {
-        float dt = getDeltaTime();
-        for (auto& tween : tweens) {
-            tween.update(dt);
-        }
+        // Tweens auto-update via events().update — no manual update needed
     }
 
     void draw() override {
