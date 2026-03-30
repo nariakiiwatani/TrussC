@@ -3,11 +3,11 @@
 
 cmake_minimum_required(VERSION 3.20)
 
-# プラットフォームに応じて言語を設定（OBJC/OBJCXX は macOS のみ）
-if(APPLE)
-    project(TrussC VERSION 0.0.1 LANGUAGES C CXX OBJC OBJCXX)
-else()
-    project(TrussC VERSION 0.0.1 LANGUAGES C CXX)
+# Start with C/CXX only — OBJC/OBJCXX enabled after project() if on macOS
+project(TrussC VERSION 0.0.1 LANGUAGES C CXX)
+# Toolchain variables (ANDROID, APPLE) are available after project()
+if(APPLE AND NOT ANDROID)
+    enable_language(OBJC OBJCXX)
 endif()
 
 # C++20 を使用
@@ -26,6 +26,11 @@ if(EMSCRIPTEN)
     set(TC_PLATFORM_EMSCRIPTEN TRUE)
     set(TC_GRAPHICS_BACKEND "WGPU")  # WebGPU
     message(STATUS "[TrussC] Platform: Emscripten (WebGPU)")
+elseif(ANDROID)
+    # Android NDK toolchain sets ANDROID=TRUE and UNIX=TRUE
+    set(TC_PLATFORM_ANDROID TRUE)
+    set(TC_GRAPHICS_BACKEND "GLES3")
+    message(STATUS "[TrussC] Platform: Android (GLES3)")
 elseif(APPLE)
     set(TC_PLATFORM_MACOS TRUE)
     set(TC_GRAPHICS_BACKEND "METAL")
@@ -65,6 +70,8 @@ file(GLOB TC_SOUND_SOURCES    ${CMAKE_CURRENT_SOURCE_DIR}/include/tc/sound/*.cpp
 # プラットフォーム固有ソースファイル
 if(TC_PLATFORM_EMSCRIPTEN)
     file(GLOB TC_PLATFORM_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/platform/web/*.cpp)
+elseif(TC_PLATFORM_ANDROID)
+    file(GLOB TC_PLATFORM_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/platform/android/*.cpp)
 elseif(TC_PLATFORM_MACOS)
     file(GLOB TC_PLATFORM_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/platform/mac/*.mm)
 elseif(TC_PLATFORM_WINDOWS)
@@ -173,6 +180,15 @@ elseif(TC_PLATFORM_LINUX)
         ${GSTREAMER_LIBRARIES}
         pthread
         dl
+    )
+
+elseif(TC_PLATFORM_ANDROID)
+    target_compile_definitions(TrussC PUBLIC SOKOL_GLES3)
+    target_link_libraries(TrussC PUBLIC
+        GLESv3
+        EGL
+        log
+        android
     )
 
 elseif(TC_PLATFORM_RASPBIAN)
