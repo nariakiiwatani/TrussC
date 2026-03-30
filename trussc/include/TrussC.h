@@ -263,6 +263,9 @@ namespace internal {
     inline int mouseButton = -1;  // Currently pressed button (-1 = none)
     inline bool mousePressed = false;
 
+    // Touch-as-mouse mapping (default: ON)
+    inline bool touchAsMouse = true;
+
     // Keyboard state
     inline std::unordered_set<int> keysPressed;
 
@@ -1610,6 +1613,14 @@ inline Vec2 getMousePos() { return Vec2(internal::mouseX, internal::mouseY); }
 inline Vec2 getGlobalMousePos() { return Vec2(getGlobalMouseX(), getGlobalMouseY()); }
 
 // ---------------------------------------------------------------------------
+// Touch-as-mouse mapping
+// When enabled (default), the first touch point is also delivered as mouse events.
+// Disable with setTouchAsMouse(false) for apps that handle touch separately.
+// ---------------------------------------------------------------------------
+inline void setTouchAsMouse(bool enabled) { internal::touchAsMouse = enabled; }
+inline bool getTouchAsMouse() { return internal::touchAsMouse; }
+
+// ---------------------------------------------------------------------------
 // System Information
 // ---------------------------------------------------------------------------
 
@@ -2208,6 +2219,70 @@ namespace internal {
                 if (appMouseScrolledFunc) appMouseScrolledFunc(ev->scroll_x, ev->scroll_y);
                 break;
             }
+            // Touch events (Android/iOS)
+            case SAPP_EVENTTYPE_TOUCHES_BEGAN:
+            case SAPP_EVENTTYPE_TOUCHES_MOVED:
+            case SAPP_EVENTTYPE_TOUCHES_ENDED:
+            case SAPP_EVENTTYPE_TOUCHES_CANCELLED: {
+                // Build TouchEventArgs from sokol touchpoints
+                TouchEventArgs touchArgs;
+                touchArgs.numTouches = ev->num_touches;
+                if (touchArgs.numTouches > 8) touchArgs.numTouches = 8;
+                for (int i = 0; i < touchArgs.numTouches; i++) {
+                    touchArgs.touches[i].id = (int)ev->touches[i].identifier;
+                    touchArgs.touches[i].x = ev->touches[i].pos_x * scale;
+                    touchArgs.touches[i].y = ev->touches[i].pos_y * scale;
+                    touchArgs.touches[i].changed = ev->touches[i].changed;
+                }
+
+                // Fire touch events (listeners receive via events().touchBegan etc.)
+                if (ev->type == SAPP_EVENTTYPE_TOUCHES_BEGAN) {
+                    events().touchPressed.notify(touchArgs);
+                } else if (ev->type == SAPP_EVENTTYPE_TOUCHES_MOVED) {
+                    events().touchMoved.notify(touchArgs);
+                } else {
+                    events().touchReleased.notify(touchArgs);
+                }
+
+                // Touch-as-mouse: map first touch to mouse events
+                if (touchAsMouse && touchArgs.numTouches > 0) {
+                    float tx = touchArgs.touches[0].x;
+                    float ty = touchArgs.touches[0].y;
+
+                    if (ev->type == SAPP_EVENTTYPE_TOUCHES_BEGAN) {
+                        currentMouseButton = 0;
+                        mouseX = tx; mouseY = ty;
+                        mouseButton = 0;
+                        mousePressed = true;
+
+                        MouseEventArgs margs;
+                        margs.x = tx; margs.y = ty; margs.button = 0;
+                        events().mousePressed.notify(margs);
+                        if (appMousePressedFunc) appMousePressedFunc((int)tx, (int)ty, 0);
+                    } else if (ev->type == SAPP_EVENTTYPE_TOUCHES_MOVED) {
+                        float prevX = mouseX, prevY = mouseY;
+                        mouseX = tx; mouseY = ty;
+
+                        MouseDragEventArgs margs;
+                        margs.x = tx; margs.y = ty;
+                        margs.deltaX = tx - prevX; margs.deltaY = ty - prevY;
+                        margs.button = 0;
+                        events().mouseDragged.notify(margs);
+                        if (appMouseDraggedFunc) appMouseDraggedFunc((int)tx, (int)ty, 0);
+                    } else {
+                        currentMouseButton = -1;
+                        mouseX = tx; mouseY = ty;
+                        mouseButton = -1;
+                        mousePressed = false;
+
+                        MouseEventArgs margs;
+                        margs.x = tx; margs.y = ty; margs.button = 0;
+                        events().mouseReleased.notify(margs);
+                        if (appMouseReleasedFunc) appMouseReleasedFunc((int)tx, (int)ty, 0);
+                    }
+                }
+                break;
+            }
             case SAPP_EVENTTYPE_RESIZED: {
                 // Use sapp_width() (framebuffer size) instead of ev->window_width
                 // because event data might be logical size on some platforms, causing double scaling.
@@ -2322,6 +2397,17 @@ sapp_desc buildAppDescriptor(const WindowSettings& settings = WindowSettings()) 
     internal::appFilesDroppedFunc = [](const std::vector<std::string>& files) {
         if (app) app->filesDropped(files);
     };
+
+    // Touch events — delivered via events() system, forwarded to App virtual methods
+    events().touchPressed.listen([](TouchEventArgs& args) {
+        if (app) app->touchPressed(args);
+    });
+    events().touchMoved.listen([](TouchEventArgs& args) {
+        if (app) app->touchMoved(args);
+    });
+    events().touchReleased.listen([](TouchEventArgs& args) {
+        if (app) app->touchReleased(args);
+    });
 
     // Build sapp_desc
     sapp_desc desc = {};

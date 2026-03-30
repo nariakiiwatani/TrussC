@@ -17,8 +17,6 @@ namespace trussc {
 namespace platform {
 
 float getDisplayScaleFactor() {
-    // sokol_app handles DPI on Android via ANativeWindow
-    // sapp_dpi_scale() is available after initialization
     return sapp_dpi_scale();
 }
 

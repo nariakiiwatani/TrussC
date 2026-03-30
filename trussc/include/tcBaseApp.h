@@ -97,6 +97,15 @@ public:
     }
 
     // -------------------------------------------------------------------------
+    // Touch events (multi-touch, used on Android/iOS)
+    // First touch is also delivered as mouse events by default (see setTouchAsMouse)
+    // -------------------------------------------------------------------------
+
+    virtual void touchPressed(const TouchEventArgs& touch) { (void)touch; }
+    virtual void touchMoved(const TouchEventArgs& touch) { (void)touch; }
+    virtual void touchReleased(const TouchEventArgs& touch) { (void)touch; }
+
+    // -------------------------------------------------------------------------
     // Window events
     // -------------------------------------------------------------------------
 

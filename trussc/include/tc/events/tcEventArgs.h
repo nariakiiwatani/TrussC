@@ -81,13 +81,27 @@ struct DragDropEventArgs {
 };
 
 // ---------------------------------------------------------------------------
-// Touch event arguments (for future use)
+// Touch point (single finger)
 // ---------------------------------------------------------------------------
-struct TouchEventArgs {
-    int id = 0;               // Touch ID
+struct TouchPoint {
+    int id = 0;               // Touch ID (persistent across move)
     float x = 0.0f;
     float y = 0.0f;
-    float pressure = 1.0f;
+    float pressure = 1.0f;    // Touch pressure (0.0-1.0, default 1.0; not yet reported by sokol)
+    bool changed = false;     // Whether this touch was part of the current action
+};
+
+// ---------------------------------------------------------------------------
+// Touch event arguments (multi-touch)
+// ---------------------------------------------------------------------------
+struct TouchEventArgs {
+    TouchPoint touches[8];    // Up to 8 simultaneous touches
+    int numTouches = 0;
+
+    // Convenience: first touch
+    float x() const { return numTouches > 0 ? touches[0].x : 0.0f; }
+    float y() const { return numTouches > 0 ? touches[0].y : 0.0f; }
+    int id() const { return numTouches > 0 ? touches[0].id : 0; }
 };
 
 // ---------------------------------------------------------------------------
