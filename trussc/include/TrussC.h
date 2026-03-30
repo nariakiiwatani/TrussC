@@ -2359,14 +2359,29 @@ sapp_desc buildAppDescriptor(const WindowSettings& settings = WindowSettings()) 
     return desc;
 }
 
-// Desktop entry point: build descriptor and run the event loop.
-// On Android, use buildAppDescriptor() from sokol_main() instead.
+// Desktop: build descriptor and run the event loop.
+// Android: sokol handles the event loop via ANativeActivity_onCreate → sokol_main().
+//          runApp() just stores the descriptor for sokol_main() to retrieve.
+#ifdef __ANDROID__
+namespace internal {
+    inline sapp_desc g_androidDesc = {};
+}
+
+template<typename AppClass>
+int runApp(const WindowSettings& settings = WindowSettings()) {
+    internal::g_androidDesc = buildAppDescriptor<AppClass>(settings);
+    // On Android, sokol_main() will return g_androidDesc.
+    // runApp() is called from sokol_main() context, so just return.
+    return 0;
+}
+#else
 template<typename AppClass>
 int runApp(const WindowSettings& settings = WindowSettings()) {
     sapp_desc desc = buildAppDescriptor<AppClass>(settings);
     sapp_run(&desc);
     return 0;
 }
+#endif
 
 } // namespace trussc
 

@@ -17,4 +17,26 @@
 #include "sokol_glue.h"
 #include "util/sokol_gl_tc.h"
 
+// ---------------------------------------------------------------------------
+// Android entry point bridge
+// ---------------------------------------------------------------------------
+// sokol_app.h (without SOKOL_NO_ENTRY) declares sokol_main() but does not
+// define it. On Android, ANativeActivity_onCreate calls sokol_main() to get
+// the sapp_desc.
+//
+// Strategy: user's main() calls runApp<tcApp>() which stores the descriptor
+// in trussc::internal::g_androidDesc. sokol_main() calls main() then returns
+// that stored descriptor.
+//
+// This lets existing main.cpp work unchanged on Android.
+// ---------------------------------------------------------------------------
+extern int main();
+namespace trussc { namespace internal { extern sapp_desc g_androidDesc; } }
+
+sapp_desc sokol_main(int argc, char* argv[]) {
+    (void)argc; (void)argv;
+    main();  // Populates trussc::internal::g_androidDesc via runApp()
+    return trussc::internal::g_androidDesc;
+}
+
 #endif // __ANDROID__
