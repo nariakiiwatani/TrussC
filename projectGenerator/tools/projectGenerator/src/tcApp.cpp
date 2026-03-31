@@ -411,7 +411,8 @@ void tcApp::draw() {
                 if (ImGui::IsItemHovered()) {
                     string tip;
                     if (!hasAndroidHome) tip += "ANDROID_HOME is not set\n";
-                    if (!hasJavaHome) tip += "JAVA_HOME is not set";
+                    if (!hasJavaHome) tip += "JAVA_HOME is not set\n";
+                    tip += "(GUI apps don't inherit shell env vars.\n Build from terminal or set via launchctl.)";
                     ImGui::SetTooltip("%s", tip.c_str());
                 }
             }

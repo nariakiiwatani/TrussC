@@ -369,7 +369,7 @@ void ProjectGenerator::writeCMakePresets(const string& destPath) {
         androidPreset["cacheVariables"]["ANDROID_ABI"] = "arm64-v8a";
         androidPreset["cacheVariables"]["ANDROID_PLATFORM"] = "android-26";
 
-        // Detect NDK toolchain
+        // NDK toolchain: try to resolve at generation time, fallback to $env{}
         string ndkHome;
         if (getenv("ANDROID_NDK_HOME")) {
             ndkHome = getenv("ANDROID_NDK_HOME");
@@ -391,7 +391,10 @@ void ProjectGenerator::writeCMakePresets(const string& destPath) {
             androidPreset["toolchainFile"] = ndkHome + "/build/cmake/android.toolchain.cmake";
             log("Android NDK: " + ndkHome);
         } else {
-            log("WARNING: Android NDK not found. Set ANDROID_HOME or ANDROID_NDK_HOME.");
+            // Use CMake env expansion — resolved at build time, not generation time
+            // Works when ANDROID_NDK_HOME is set in the terminal but not in GUI app
+            androidPreset["toolchainFile"] = "$env{ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake";
+            log("Android NDK not found at generation time. Using $env{ANDROID_NDK_HOME} (resolved at build time).");
         }
 
         if (!trusscDir.empty()) {
