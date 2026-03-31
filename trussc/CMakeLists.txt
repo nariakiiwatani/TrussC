@@ -233,11 +233,68 @@ function(trussc_setup_icon TARGET_NAME)
     set(ICON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/icon")
     set(DEFAULT_DIR "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/resources")
 
-    if(APPLE AND NOT TC_PLATFORM_IOS)
+    if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+        _trussc_setup_icon_ios(${TARGET_NAME} "${ICON_DIR}" "${DEFAULT_DIR}")
+    elseif(APPLE)
         _trussc_setup_icon_macos(${TARGET_NAME} "${ICON_DIR}" "${DEFAULT_DIR}")
     elseif(WIN32)
         _trussc_setup_icon_windows(${TARGET_NAME} "${ICON_DIR}" "${DEFAULT_DIR}")
     endif()
+endfunction()
+
+# -----------------------------------------------------------------------------
+# iOS icon setup (AppIcon.xcassets with single 1024x1024 PNG)
+# -----------------------------------------------------------------------------
+function(_trussc_setup_icon_ios TARGET_NAME ICON_DIR DEFAULT_DIR)
+    # Find icon PNG: project icon/ dir first, then default
+    set(ICON_PNG "")
+    file(GLOB PROJECT_PNGS "${ICON_DIR}/*.png")
+    if(PROJECT_PNGS)
+        list(GET PROJECT_PNGS 0 ICON_PNG)
+        get_filename_component(ICON_PNG_NAME "${ICON_PNG}" NAME)
+        message(STATUS "[${TARGET_NAME}] Using iOS icon: ${ICON_PNG_NAME}")
+    elseif(EXISTS "${DEFAULT_DIR}/default.png")
+        set(ICON_PNG "${DEFAULT_DIR}/default.png")
+        message(STATUS "[${TARGET_NAME}] Using default iOS icon")
+    else()
+        message(STATUS "[${TARGET_NAME}] No iOS icon found, skipping")
+        return()
+    endif()
+
+    # Generate AppIcon.xcassets in build directory
+    set(XCASSETS_DIR "${CMAKE_CURRENT_BINARY_DIR}/AppIcon.xcassets")
+    set(APPICONSET_DIR "${XCASSETS_DIR}/AppIcon.appiconset")
+    file(MAKE_DIRECTORY "${APPICONSET_DIR}")
+
+    # Copy PNG
+    file(COPY "${ICON_PNG}" DESTINATION "${APPICONSET_DIR}")
+    get_filename_component(ICON_FILENAME "${ICON_PNG}" NAME)
+
+    # Generate Contents.json (single size, Xcode 14+)
+    file(WRITE "${APPICONSET_DIR}/Contents.json"
+"{
+  \"images\" : [
+    {
+      \"filename\" : \"${ICON_FILENAME}\",
+      \"idiom\" : \"universal\",
+      \"platform\" : \"ios\",
+      \"size\" : \"1024x1024\"
+    }
+  ],
+  \"info\" : {
+    \"author\" : \"xcode\",
+    \"version\" : 1
+  }
+}
+")
+
+    # Add xcassets to target (Xcode handles asset catalog compilation automatically)
+    target_sources(${TARGET_NAME} PRIVATE "${XCASSETS_DIR}")
+
+    # Tell Xcode to use this icon
+    set_target_properties(${TARGET_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
+    )
 endfunction()
 
 # -----------------------------------------------------------------------------

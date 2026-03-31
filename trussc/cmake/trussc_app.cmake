@@ -247,6 +247,7 @@ macro(trussc_app)
                 target_sources(${PROJECT_NAME} PRIVATE "${_data_file}")
             endforeach()
         endif()
+        trussc_setup_icon(${PROJECT_NAME})
     elseif(APPLE)
         set_target_properties(${PROJECT_NAME} PROPERTIES
             MACOSX_BUNDLE TRUE
