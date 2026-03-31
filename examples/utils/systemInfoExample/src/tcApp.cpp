@@ -37,6 +37,9 @@ void tcApp::draw() {
     y += lineH + 8;
 
     // --- Brightness ---
+    // Note: on Android, the value is gamma-corrected (perceptual), not linear.
+    // Slider at max may report ~0.64 rather than 1.0. This is normal OS behavior.
+    // On iOS, the value matches the slider position linearly (0.0 - 1.0).
     y = drawSection(x, y, "Brightness");
     float bright = getSystemBrightness();
     if (bright < 0) {

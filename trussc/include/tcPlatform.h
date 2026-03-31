@@ -79,6 +79,12 @@ void setSystemVolume(float volume);  // iOS: logs warning (not supported by OS)
 
 // ---------------------------------------------------------------------------
 // Screen brightness (0.0 - 1.0)
+// Note: the meaning of the value differs by platform.
+//   iOS: linear, 0.0 = min, 1.0 = max (matches the UI slider position)
+//   Android: gamma-corrected (perceptual). The OS applies a non-linear curve,
+//            so the value may appear much lower than the slider position
+//            (e.g. slider at max → value ~0.64). This is normal Android behavior.
+//   Desktop: returns -1 (not supported)
 // ---------------------------------------------------------------------------
 float getSystemBrightness();
 void setSystemBrightness(float brightness);
