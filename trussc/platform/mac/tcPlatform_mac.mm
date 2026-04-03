@@ -179,7 +179,7 @@ bool saveScreenshot(const std::filesystem::path& path) {
         8,                          // bitsPerComponent
         width * 4,                  // bytesPerRow
         colorSpace,
-        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big
+        (CGBitmapInfo)kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big
     );
 
     if (!context) {
